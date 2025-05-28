@@ -1,0 +1,52 @@
+/* Add this to your global CSS file or create a new module CSS file */
+
+@media (max-width: 1024px) {
+    .mobile-filter-backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 40;
+      transition: opacity 0.3s ease-in-out;
+    }
+  
+    .mobile-filter-sheet {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 420px;
+      background-color: white;
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.3s ease-in-out;
+    }
+  
+    .mobile-filter-sheet.open {
+      transform: translateY(0);
+    }
+  }
+  
+  /* Custom scrollbar for the filters */
+  .mobile-filter-content {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E0 #EDF2F7;
+  }
+  
+  .mobile-filter-content::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .mobile-filter-content::-webkit-scrollbar-track {
+    background: #EDF2F7;
+  }
+  
+  .mobile-filter-content::-webkit-scrollbar-thumb {
+    background-color: #CBD5E0;
+    border-radius: 3px;
+  }
+  
+  /* Prevent body scroll when modal is open */
+  .modal-open {
+    overflow: hidden;
+  }

@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap');
+
+/*Font.module.css*/
+
+/* Custom font style for Montserrat Alternates */
+.fontMontserrat {
+  font-family: 'Montserrat Alternates', sans-serif;
+}
+.font-sans{
+  font-family: 'DM Sans', sans-serif; /* Default font */
+}

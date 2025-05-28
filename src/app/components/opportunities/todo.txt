@@ -1,0 +1,114 @@
+<div className="relative w-full max-w-6xl mx-auto md:fixed md:bottom-8 md:right-8 md:w-[600px] lg:w-[700px]" 
+    style={{
+      backgroundImage: 'linear-gradient(135deg, rgba(238, 242, 255, 0.5), rgba(243, 232, 255, 0.6))',
+      borderRadius: '16px',
+      backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255, 255, 255, 0.4)',
+      boxShadow: '0 15px 35px rgba(0, 0, 0, 0.2)',
+      padding: '24px',
+      overflow: 'hidden'
+    }}>
+    
+    {/* Header */}
+    <div className="mb-4 relative z-10">
+      <h3 className="text-lg font-semibold text-gray-800">Partner Organizations</h3>
+      <p className="text-sm text-gray-600">Swipe or hover to pause</p>
+    </div>
+    
+    {/* Carousel container with mask gradients */}
+    <div className="relative overflow-hidden py-4">
+      {/* Left fade gradient */}
+      <div className="absolute left-0 top-0 h-full w-16 bg-gradient-to-r from-white to-transparent opacity-75 z-10"></div>
+      
+      {/* Right fade gradient */}
+      <div className="absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-white to-transparent opacity-75 z-10"></div>
+      
+      {/* Carousel track */}
+      <div className="flex w-fit animate-carousel hover:animate-pause">
+        {/* Main organizations */}
+        {[...new Map(opportunities.map(item => [item.organization.id, item])).values()].map((opportunity) => (
+          <div key={opportunity.organization.id} 
+            className="flex-shrink-0 w-[130px] mx-3 transition-all duration-300 hover:scale-110 group" 
+          >
+            <div className="bg-white rounded-xl p-3 shadow-md group-hover:shadow-xl transform transition-transform group-hover:rotate-2 h-[130px] flex items-center justify-center">
+              <Image
+                src={opportunity.organization.logoUrl || '/images/default-logo.png'}
+                alt={opportunity.organization.name}
+                width={120}
+                height={120}
+                className="rounded-lg object-contain transition-all duration-300 group-hover:brightness-110"
+                loading="eager" />
+            </div>
+            <p className="text-center mt-2 text-xs font-medium text-gray-700">{opportunity.organization.name}</p>
+          </div>
+        ))}
+        
+        {/* Duplicates for seamless looping */}
+        {[...new Map(opportunities.map(item => [item.organization.id, item])).values()].slice(0, 5).map((opportunity) => (
+          <div key={`duplicate-${opportunity.organization.id}`} 
+            className="flex-shrink-0 w-[130px] mx-3 transition-all duration-300 hover:scale-110 group" 
+          >
+            <div className="bg-white rounded-xl p-3 shadow-md group-hover:shadow-xl transform transition-transform group-hover:rotate-2 h-[130px] flex items-center justify-center">
+              <Image
+                src={opportunity.organization.logoUrl || '/images/default-logo.png'}
+                alt={opportunity.organization.name}
+                width={120}
+                height={120}
+                className="rounded-lg object-contain transition-all duration-300 group-hover:brightness-110"
+                loading="eager" />
+            </div>
+            <p className="text-center mt-2 text-xs font-medium text-gray-700">{opportunity.organization.name}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+    
+    {/* Controls */}
+    <div className="flex justify-between mt-4">
+      <button 
+        className="text-xs px-3 py-1 bg-white bg-opacity-50 hover:bg-opacity-70 rounded-full text-gray-700 transition-all duration-300 flex items-center"
+        onClick={() => {
+          const element = document.querySelector('.animate-carousel');
+          if (element) {
+            (element as HTMLElement).style.animationPlayState = 'paused';
+          }
+        }}>
+        <span className="mr-1">⏸️</span> Pause
+      </button>
+      <button 
+        className="text-xs px-3 py-1 bg-white bg-opacity-50 hover:bg-opacity-70 rounded-full text-gray-700 transition-all duration-300 flex items-center"
+        onClick={() => {
+          const element = document.querySelector('.animate-carousel');
+          if (element) {
+            (element as HTMLElement).style.animationPlayState = 'running';
+          }
+        }}>
+        <span className="mr-1">▶️</span> Play
+      </button>
+    </div>
+
+    <style jsx>{`
+      @keyframes carousel {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(calc(-130px * 5 - 1.5rem * 5));
+        }
+      }
+      
+      .animate-carousel {
+        animation: carousel 25s linear infinite;
+      }
+      
+      .animate-pause:hover {
+        animation-play-state: paused;
+      }
+
+      @media (max-width: 768px) {
+        .animate-carousel {
+          animation-duration: 18s;
+        }
+      }
+    `}</style>
+  </div>

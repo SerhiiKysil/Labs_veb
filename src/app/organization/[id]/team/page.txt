@@ -1,0 +1,271 @@
+// pages/organization/[id]/team.tsx
+"use client"
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import axios from 'axios';
+import { CrewMember, Organization } from '../../../types/organization';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export default function TeamManagement() {
+  const params = useParams();
+  const id = params.id;
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [crewMembers, setCrewMembers] = useState<CrewMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // For adding new members
+  const [email, setEmail] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  
+  // For role management
+  const [selectedRole, setSelectedRole] = useState<string>('MEMBER');
+  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
+
+  // Fetch organization and crew data
+  useEffect(() => {
+    if (!id) return;
+    
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const orgResponse = await axios.get(`${API_URL}/api/organizations/${id}`);
+        setOrganization(orgResponse.data);
+        
+        const crewResponse = await axios.get(`${API_URL}/api/organizations/${id}/crew`);
+        setCrewMembers(crewResponse.data);
+      } catch (err) {
+        setError('Failed to load organization data');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [id]);
+
+  // Search for users by email
+  const searchUsers = async (query: string) => {
+    if (!query || query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setSearchLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/users/search?email=${query}`);
+      setSearchResults(response.data);
+    } catch (err) {
+      console.error('Error searching users:', err);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Add crew member
+  const addCrewMember = async (userId: number) => {
+    if (!id) return;
+    
+    try {
+      await axios.post(`${API_URL}/api/organizations/${id}/crew`, null, {
+        params: { userId }
+      });
+      
+      // Refresh crew list
+      const crewResponse = await axios.get(`${API_URL}/api/organizations/${id}/crew`);
+      setCrewMembers(crewResponse.data);
+      setEmail('');
+      setSearchResults([]);
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        alert('This user is already a member of the organization');
+      } else {
+        alert('Failed to add team member');
+      }
+      console.error(err);
+    }
+  };
+
+  // Remove crew member
+  const removeCrewMember = async (userId: number) => {
+    if (!id) return;
+    
+    if (!confirm('Are you sure you want to remove this team member?')) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API_URL}/api/organizations/${id}/crew/${userId}`);
+      
+      // Update local state
+      setCrewMembers(crewMembers.filter(member => member.id !== userId));
+    } catch (err) {
+      alert('Failed to remove team member');
+      console.error(err);
+    }
+  };
+
+  // Update crew member role
+  const updateMemberRole = async (userId: number, role: string) => {
+    if (!id) return;
+    
+    try {
+      await axios.put(`${API_URL}/api/organizations/${id}/crew/${userId}/role`, null, {
+        params: { role }
+      });
+      
+      // Update local state
+      setCrewMembers(crewMembers.map(member => 
+        member.id === userId ? { ...member, role } : member
+      ));
+      setEditingMemberId(null);
+    } catch (err) {
+      alert('Failed to update member role');
+      console.error(err);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center">Loading team data...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">
+        {organization?.name} - Team Management
+      </h1>
+      
+      {/* Add new team member section */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Add Team Member</h2>
+        
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-grow">
+            <input
+              type="email"
+              placeholder="Search user by email"
+              className="w-full p-2 border rounded"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                searchUsers(e.target.value);
+              }}
+            />
+            
+            {searchLoading && (
+              <div className="mt-2 text-gray-500">Searching...</div>
+            )}
+            
+            {searchResults.length > 0 && (
+              <ul className="mt-2 border rounded max-h-40 overflow-y-auto">
+                {searchResults.map((user) => (
+                  <li 
+                    key={user.id}
+                    className="p-2 hover:bg-gray-100 cursor-pointer border-b"
+                    onClick={() => addCrewMember(user.id)}
+                  >
+                    {user.name || user.email} ({user.email})
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Team members list */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-4">Team Members ({crewMembers.length})</h2>
+        
+        {crewMembers.length === 0 ? (
+          <p className="text-gray-500">No team members found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="p-3">Name</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">Role</th>
+                  <th className="p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {crewMembers.map((member) => (
+                  <tr key={member.id} className="border-t">
+                    <td className="p-3">
+                      {member.name || 'No name'}
+                      {member.verified && (
+                        <span className="ml-2 text-sm bg-green-100 text-green-800 py-1 px-2 rounded">Verified</span>
+                      )}
+                    </td>
+                    <td className="p-3">{member.email}</td>
+                    <td className="p-3">
+                      {editingMemberId === member.id ? (
+                        <select 
+                          value={selectedRole}
+                          onChange={(e) => setSelectedRole(e.target.value)}
+                          className="p-1 border rounded"
+                        >
+                          <option value="MEMBER">Member</option>
+                          <option value="MODERATOR">Moderator</option>
+                          <option value="ADMIN">Admin</option>
+                        </select>
+                      ) : (
+                        <span className={`
+                          py-1 px-2 rounded text-sm
+                          ${member.role === 'ADMIN' ? 'bg-blue-100 text-blue-800' : ''}
+                          ${member.role === 'MODERATOR' ? 'bg-purple-100 text-purple-800' : ''}
+                          ${member.role === 'MEMBER' ? 'bg-gray-100 text-gray-800' : ''}
+                        `}>
+                          {member.role}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {editingMemberId === member.id ? (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => updateMemberRole(member.id, selectedRole)}
+                            className="bg-green-500 hover:bg-green-600 text-white py-1 px-2 rounded text-sm"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            onClick={() => setEditingMemberId(null)}
+                            className="bg-gray-500 hover:bg-gray-600 text-white py-1 px-2 rounded text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              setEditingMemberId(member.id);
+                              setSelectedRole(member.role || 'MEMBER');
+                            }}
+                            className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-sm"
+                          >
+                            Edit Role
+                          </button>
+                          <button 
+                            onClick={() => removeCrewMember(member.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

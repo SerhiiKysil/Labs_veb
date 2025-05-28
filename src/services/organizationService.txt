@@ -1,0 +1,39 @@
+// services/organizationService.ts
+import axios from 'axios';
+import { CrewMember, Organization } from '../app/types/organization';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export const getOrganization = async (id: string | number): Promise<Organization> => {
+  const response = await axios.get(`${API_URL}/api/organizations/${id}`);
+  return response.data;
+};
+
+export const getOrganizationTeam = async (id: string | number): Promise<CrewMember[]> => {
+  const response = await axios.get(`${API_URL}/api/organizations/${id}/crew`);
+  return response.data;
+};
+
+export const addTeamMember = async (organizationId: string | number, userId: number): Promise<void> => {
+  await axios.post(`${API_URL}/api/organizations/${organizationId}/crew?userId=${userId}`);
+};
+
+export const removeTeamMember = async (organizationId: string | number, userId: number): Promise<void> => {
+  await axios.delete(`${API_URL}/api/organizations/${organizationId}/crew/${userId}`);
+};
+
+export const updateMemberRole = async (
+  organizationId: string | number, 
+  userId: number, 
+  role: string
+): Promise<CrewMember> => {
+  const response = await axios.put(`${API_URL}/api/organizations/${organizationId}/crew/${userId}/role?role=${role}`);
+  return response.data;
+};
+
+// Mock endpoint for available users (would need to be implemented on backend)
+export const getAvailableUsers = async (): Promise<any[]> => {
+  // This would be replaced with your actual endpoint
+  const response = await axios.get(`${API_URL}/api/users/available`);
+  return response.data;
+};

@@ -1,0 +1,140 @@
+// src/services/apiClient.ts
+import authService from './authService';
+
+/**
+ * API клієнт з автоматичним оновленням токена
+ */
+class ApiClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  /**
+   * Виконати запит з авторизацією та автоматичним оновленням токена
+   */
+  async fetch(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    try {
+      // Додаємо токен до заголовків
+      const headers = this.createHeaders(options.headers);
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        ...options,
+        headers,
+      });
+
+      // Якщо 401 Unauthorized, пробуємо оновити токен і повторити запит
+      if (response.status === 401) {
+        const newToken = await authService.refreshAccessToken();
+        
+        // Якщо не вдалося оновити токен, повертаємо помилку
+        if (!newToken) {
+          throw new Error('Unable to refresh authentication token');
+        }
+
+        // Повторюємо запит з новим токеном
+        const newHeaders = this.createHeaders(options.headers);
+        return fetch(`${this.baseUrl}${endpoint}`, {
+          ...options,
+          headers: newHeaders,
+        });
+      }
+
+      return response;
+    } catch (error) {
+      console.error(`API request failed: ${endpoint}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Створення заголовків з токеном авторизації
+   */
+  private createHeaders(existingHeaders: HeadersInit = {}): HeadersInit {
+    const token = authService.getAccessToken();
+    const headers = new Headers(existingHeaders as any);
+    
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+    
+    return headers;
+  }
+
+  /**
+   * GET запит
+   */
+  async get<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await this.fetch(endpoint, {
+      ...options,
+      method: 'GET',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`GET request failed: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+
+  /**
+   * POST запит
+   */
+  async post<T>(endpoint: string, data: any, options: RequestInit = {}): Promise<T> {
+    const response = await this.fetch(endpoint, {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`POST request failed: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+
+  /**
+   * PUT запит
+   */
+  async put<T>(endpoint: string, data: any, options: RequestInit = {}): Promise<T> {
+    const response = await this.fetch(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`PUT request failed: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+
+  /**
+   * DELETE запит
+   */
+  async delete<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await this.fetch(endpoint, {
+      ...options,
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`DELETE request failed: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+}
+
+// Створюємо та експортуємо єдиний екземпляр
+const apiClient = new ApiClient(process.env.NEXT_PUBLIC_API_URL || '');
+export default apiClient;

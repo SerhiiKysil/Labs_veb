@@ -1,0 +1,104 @@
+// hooks/useTeamManagement.ts
+import { useState, useEffect, useCallback } from 'react';
+import { CrewMember, Organization } from '@/app/types/organization';
+import {
+  getOrganization,
+  getOrganizationTeam,
+  addTeamMember,
+  removeTeamMember,
+  updateMemberRole
+} from '@/services/organizationService';
+
+interface UseTeamManagementReturn {
+  organization: Organization | null;
+  crewMembers: CrewMember[];
+  isLoading: boolean;
+  error: string | null;
+  refreshData: () => Promise<void>;
+  handleAddMember: (userId: number) => Promise<void>;
+  handleRemoveMember: (userId: number) => Promise<void>;
+  handleUpdateRole: (userId: number, role: string) => Promise<void>;
+}
+
+export function useTeamManagement(organizationId: string | string[] | undefined): UseTeamManagementReturn {
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [crewMembers, setCrewMembers] = useState<CrewMember[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (!organizationId || typeof organizationId !== 'string') return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const [orgData, teamData] = await Promise.all([
+        getOrganization(organizationId),
+        getOrganizationTeam(organizationId)
+      ]);
+      
+      setOrganization(orgData);
+      setCrewMembers(teamData);
+    } catch (err) {
+      console.error('Помилка завантаження даних:', err);
+      setError('Не вдалося завантажити дані організації та команди');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [organizationId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleAddMember = async (userId: number) => {
+    if (!organizationId || typeof organizationId !== 'string') return;
+    
+    try {
+      await addTeamMember(organizationId, userId);
+      await fetchData(); // Refresh the team data
+    } catch (err) {
+      console.error('Помилка при додаванні учасника:', err);
+      throw err;
+    }
+  };
+
+  const handleRemoveMember = async (userId: number) => {
+    if (!organizationId || typeof organizationId !== 'string') return;
+    
+    try {
+      await removeTeamMember(organizationId, userId);
+      setCrewMembers(crewMembers.filter(member => member.id !== userId));
+    } catch (err) {
+      console.error('Помилка при видаленні учасника:', err);
+      throw err;
+    }
+  };
+
+  const handleUpdateRole = async (userId: number, role: string) => {
+    if (!organizationId || typeof organizationId !== 'string') return;
+    
+    try {
+      await updateMemberRole(organizationId, userId, role);
+      
+      setCrewMembers(crewMembers.map(member => 
+        member.id === userId ? { ...member, role } : member
+      ));
+    } catch (err) {
+      console.error('Помилка при оновленні ролі:', err);
+      throw err;
+    }
+  };
+
+  return {
+    organization,
+    crewMembers,
+    isLoading,
+    error,
+    refreshData: fetchData,
+    handleAddMember,
+    handleRemoveMember,
+    handleUpdateRole
+  };
+}
