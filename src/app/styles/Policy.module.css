@@ -50,3 +50,34 @@
     margin-top: 20px;
     font-style: italic;
 }
+
+.input {
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    color: #0070f3;
+}
+
+.button {
+    padding: 0.5rem 1rem;
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.button:hover {
+    background-color: #005bb5;
+}
+
+.meme {
+    margin-top: 1rem;
+}
+
+.memeImage {
+    max-width: 100%;
+    border-radius: 12px;
+    margin-top: 0.5rem;
+}
